@@ -176,8 +176,33 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bike-flood-reporter';
+        // --- Firebase Configuration and Initialization ---
+        
+        // =================================================================================
+        //  IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE
+        // =================================================================================
+        // You can get this from your Firebase project settings.
+        // 1. Go to the Firebase Console (https://console.firebase.google.com/)
+        // 2. Select your project.
+        // 3. Click the gear icon (Project settings) in the top-left.
+        // 4. In the "General" tab, scroll down to "Your apps".
+        // 5. Click on your web app's name.
+        // 6. Under "Firebase SDK snippet", select "Config".
+        // 7. Copy the entire 'firebaseConfig' object and paste it below, replacing the placeholder.
+        // =================================================================================
+        const firebaseConfig = {
+       apiKey: "AIzaSyDRVoJ4J1n_QCi2VOpvlQpylL4qQ-xN39Y",
+  authDomain: "isthecapitalcitytrailflo-7a1f5.firebaseapp.com",
+  projectId: "isthecapitalcitytrailflo-7a1f5",
+  storageBucket: "isthecapitalcitytrailflo-7a1f5.firebasestorage.app",
+  messagingSenderId: "424532178719",
+  appId: "1:424532178719:web:ebba0f8fb7b9fdb468a22a",
+  measurementId: "G-EPMCCQ941S"
+        };
+        // --- END OF FIREBASE CONFIGURATION ---
+
+        const appId = 'capital-city-trail-flood-reporter'; // This is a unique name for your app's data in Firestore
+
         let app, db, auth, userId;
 
         const mainStatusEl = document.getElementById('main-status');
@@ -200,9 +225,16 @@
         ];
 
         async function initialize() {
-            if (Object.keys(firebaseConfig).length === 0) {
-                mainStatusEl.textContent = "Error";
-                statusSummaryEl.textContent = "Firebase configuration is not available.";
+            // Check if the placeholder config is still being used
+            if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
+                console.error("Firebase config is missing or is still a placeholder.");
+                mainStatusEl.textContent = "Configuration Error";
+                statusSummaryEl.innerHTML = `
+                    <p class="text-red-400 font-bold text-lg">ACTION REQUIRED</p>
+                    <p class="text-sm mt-2">The Firebase configuration is missing. You need to paste your project's credentials into the HTML file to connect to the database. Please follow the instructions in the code comments.</p>
+                `;
+                // Hide the reporting form if there's a config error
+                document.querySelector('.card.mb-8').style.display = 'none';
                 return;
             }
             try {
@@ -381,7 +413,7 @@
                         <span class="font-bold text-lg ${statusClass}">${statusText}</span>
                     </div>`;
                 reportsListEl.appendChild(reportEl);
-});
+            });
         }
 
         async function handleFormSubmit(e) {
