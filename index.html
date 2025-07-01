@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Is the Capital City Trail Flooded?</title>
+    <meta name="description" content="Real-time flood status for Melbourne's Capital City Trail. Check if the beloved trail is all clear or a swimming pool today.">
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8CCB3SMB8B"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-8CCB3SMB8B');
+    </script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Dark Gray-Blue */
+            color: #E5E7EB; /* Light Gray */
+        }
+
+        .font-mono {
+            font-family: 'Roboto Mono', monospace;
+        }
+        
+        /* Main Status Banner Styling */
+        .status-banner {
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+            border: 1px solid #374151; /* Gray-700 */
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+        .status-banner.status-clear {
+            background: radial-gradient(circle, rgba(5, 150, 105, 0.3), rgba(5, 150, 105, 0) 70%);
+            border-color: #059669; /* Emerald-600 */
+        }
+        .status-banner.status-clear h2 { color: #10B981; } /* Emerald-500 */
+
+        .status-banner.status-flooded {
+            background: radial-gradient(circle, rgba(220, 38, 38, 0.3), rgba(220, 38, 38, 0) 70%);
+            border-color: #DC2626; /* Red-600 */
+        }
+        .status-banner.status-flooded h2 { color: #EF4444; } /* Red-500 */
+
+        .status-banner.status-unknown {
+             background: radial-gradient(circle, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0) 70%);
+            border-color: #F59E0B; /* Amber-500 */
+        }
+        .status-banner.status-unknown h2 { color: #FBBF24; } /* Amber-400 */
+
+        /* Card and Form Styling */
+        .card {
+            background-color: #1F2937; /* Gray-800 */
+            border: 1px solid #374151; /* Gray-700 */
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+        
+        .primary-button {
+            background-color: #3B82F6; /* Blue-500 */
+            color: white;
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: background-color 0.2s ease;
+        }
+        .primary-button:hover {
+            background-color: #2563EB; /* Blue-600 */
+        }
+
+        .form-radio, .form-checkbox {
+            accent-color: #3B82F6;
+        }
+        
+        #message-modal .card {
+             background-color: #374151; /* Gray-700 */
+        }
+        
+        .status-tag {
+            font-weight: 700;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+        .status-tag-clear { background-color: rgba(16, 185, 129, 0.2); color: #34D399; }
+        .status-tag-flooded { background-color: rgba(239, 68, 68, 0.2); color: #F87171; }
+        .status-tag-unknown { background-color: rgba(245, 158, 11, 0.2); color: #FBBF24; }
+
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container mx-auto max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-white">Is the Capital City Trail flooded?</h1>
+            <p class="mt-2 text-lg text-gray-400">Real-time flood status for Melbourne's Capital City Trail</p>
+        </header>
+
+        <main>
+            <!-- Main Status Display -->
+            <div id="status-banner" class="status-banner p-8 md:p-12 mb-8">
+                <p class="text-xl md:text-2xl font-medium mb-2 text-gray-300">Current Status</p>
+                <h2 id="main-status" class="text-3xl md:text-4xl font-bold tracking-wide leading-tight">LOADING...</h2>
+                <p id="status-summary" class="mt-4 text-base text-gray-400"></p>
+            </div>
+            
+            <!-- Sectional Status Display -->
+            <div id="sectional-status-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                <!-- Sectional statuses will be dynamically inserted here -->
+            </div>
+
+            <!-- Reporting Form -->
+            <div class="card mb-8">
+                <h3 class="text-2xl font-bold mb-4 text-white">Log a New Report</h3>
+                <form id="report-form">
+                    <div class="mb-4">
+                        <label class="block font-medium mb-2 text-gray-300">Path Status</label>
+                        <div class="flex items-center space-x-6 pt-2">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="isFlooded" value="true" class="form-radio h-5 w-5" required>
+                                <span class="ml-2 text-lg text-gray-200">Flooded</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="isFlooded" value="false" class="form-radio h-5 w-5">
+                                <span class="ml-2 text-lg text-gray-200">Clear</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="location-wrapper" class="mb-4 hidden">
+                        <label id="location-label" class="block font-medium mb-2 text-gray-300">Affected Location(s)</label>
+                        <div id="location-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                            <!-- Checkboxes will be dynamically inserted here -->
+                        </div>
+                    </div>
+                    <button type="submit" class="primary-button text-lg mt-2">Submit Report</button>
+                </form>
+                 <div id="user-id-display" class="mt-4 text-xs text-gray-500 font-mono"></div>
+            </div>
+
+            <!-- Recent Reports -->
+            <div>
+                <h3 class="text-2xl font-bold mb-4 text-white">Recent Reports (Last 6 Hours)</h3>
+                <div id="reports-list" class="space-y-4">
+                    <p class="text-gray-500">Loading recent reports...</p>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Modal for messages -->
+        <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-10">
+            <div class="card text-center w-11/12 md:w-1/2">
+                <p id="modal-message-text" class="text-xl text-white"></p>
+                <button onclick="document.getElementById('message-modal').classList.add('hidden')" class="primary-button mt-6 w-auto px-10 text-lg">OK</button>
+            </div>
+        </div>
+
+        <footer class="mt-12">
+            <p class="text-center text-gray-500 text-sm">
+                Contact: <a href="mailto:isthecapitalcitytrailflooded@gmail.com" class="hover:text-gray-300 underline">isthecapitalcitytrailflooded@gmail.com</a>
+            </p>
+        </footer>
+    </div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bike-flood-reporter';
+        let app, db, auth, userId;
+
+        const mainStatusEl = document.getElementById('main-status');
+        const statusBannerEl = document.getElementById('status-banner');
+        const statusSummaryEl = document.getElementById('status-summary');
+        const sectionalStatusContainer = document.getElementById('sectional-status-container');
+        const reportForm = document.getElementById('report-form');
+        const reportsListEl = document.getElementById('reports-list');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const modal = document.getElementById('message-modal');
+        const modalMessage = document.getElementById('modal-message-text');
+        const locationWrapper = document.getElementById('location-wrapper');
+        const locationLabel = document.getElementById('location-label');
+        const radioButtons = document.querySelectorAll('input[name="isFlooded"]');
+        const locationCheckboxesContainer = document.getElementById('location-checkboxes');
+
+        const sections = [
+            'Moonee Ponds Creek Trail', 'Docklands', 'South Wharf', 'Southbank',
+            'Yarra Trail', 'Merri Creek', 'Fitzroy North', 'Carlton North', 'Princes Hill', 'Royal Park'
+        ];
+
+        async function initialize() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                mainStatusEl.textContent = "Error";
+                statusSummaryEl.textContent = "Firebase configuration is not available.";
+                return;
+            }
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                onAuthStateChanged(auth, user => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplay.textContent = `User ID: ${userId}`;
+                        setupRealtimeListener();
+                    } else {
+                        signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                mainStatusEl.textContent = "Init Failed";
+            }
+        }
+        
+        function populateLocationCheckboxes() {
+            sections.forEach((loc, index) => {
+                const id = `loc-${index}`;
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.className = 'flex items-center';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = id;
+                checkbox.name = 'location';
+                checkbox.value = loc;
+                checkbox.className = 'form-checkbox h-4 w-4 rounded';
+                const label = document.createElement('label');
+                label.htmlFor = id;
+                label.textContent = loc;
+                label.className = 'ml-2 text-gray-300 cursor-pointer';
+                checkboxDiv.appendChild(checkbox);
+                checkboxDiv.appendChild(label);
+                locationCheckboxesContainer.appendChild(checkboxDiv);
+            });
+        }
+        
+        function setupRealtimeListener() {
+            const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+            const reportsCollection = collection(db, `artifacts/${appId}/public/data/reports`);
+            const q = query(reportsCollection, where("timestamp", ">=", sixHoursAgo));
+
+            onSnapshot(q, (querySnapshot) => {
+                const reports = [];
+                querySnapshot.forEach((doc) => reports.push({ id: doc.id, ...doc.data() }));
+                
+                reports.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+                
+                const sectionalResults = calculateSectionalStatus(reports);
+                updateMainStatus(sectionalResults);
+                displaySectionalStatus(sectionalResults);
+                displayReports(reports);
+            }, (error) => {
+                console.error("Error fetching real-time reports: ", error);
+                mainStatusEl.textContent = "Data Error";
+                statusSummaryEl.textContent = "Could not fetch data.";
+            });
+        }
+
+        function calculateSectionalStatus(reports) {
+            const sectionalResults = {};
+            sections.forEach(s => { sectionalResults[s] = { flooded: 0, clear: 0, total: 0, status: 'UNKNOWN' }; });
+
+            reports.forEach(report => {
+                const locations = Array.isArray(report.location) ? report.location : [report.location];
+                locations.forEach(loc => {
+                    const section = sections.find(s => loc.includes(s));
+                    if (section) {
+                        if (report.isFlooded) {
+                            sectionalResults[section].flooded++;
+                        } else {
+                            sectionalResults[section].clear++;
+                        }
+                        sectionalResults[section].total++;
+                    }
+                });
+            });
+
+            sections.forEach(sectionName => {
+                const sectionData = sectionalResults[sectionName];
+                if (sectionData.total > 0) {
+                    const floodPercentage = (sectionData.flooded / sectionData.total) * 100;
+                    if (floodPercentage > 50) sectionData.status = 'FLOODED';
+                    else if (floodPercentage < 50) sectionData.status = 'CLEAR';
+                    else sectionData.status = 'UNDETERMINED';
+                }
+            });
+            return sectionalResults;
+        }
+
+        function updateMainStatus(sectionalResults) {
+            statusBannerEl.className = 'status-banner p-8 md:p-12 mb-8';
+            
+            const sectionsWithVotes = Object.values(sectionalResults).filter(s => s.total > 0);
+            const totalSectionsWithVotes = sectionsWithVotes.length;
+            
+            if (totalSectionsWithVotes === 0) {
+                mainStatusEl.textContent = "UNKNOWN";
+                statusSummaryEl.textContent = "No reports in the last 6 hours.";
+                statusBannerEl.classList.add('status-unknown');
+                return;
+            }
+
+            const floodedSections = sectionsWithVotes.filter(s => s.status === 'FLOODED').length;
+            const clearSections = sectionsWithVotes.filter(s => s.status === 'CLEAR').length;
+
+            let mainMessage = "UNDETERMINED";
+            let statusClass = 'status-unknown';
+
+            if (floodedSections > 0 && clearSections > 0) {
+                mainMessage = "Some sections clear, some flooded";
+            } else if (floodedSections === totalSectionsWithVotes) {
+                mainMessage = "All reports say flooded";
+                statusClass = 'status-flooded';
+            } else if (clearSections === totalSectionsWithVotes) {
+                mainMessage = "All reports say clear";
+                statusClass = 'status-clear';
+            } else if (floodedSections > totalSectionsWithVotes / 2) {
+                mainMessage = "Majority of reports say flooded";
+                statusClass = 'status-flooded';
+            } else if (clearSections > totalSectionsWithVotes / 2) {
+                mainMessage = "Majority of reports say clear";
+                statusClass = 'status-clear';
+            }
+
+            mainStatusEl.textContent = mainMessage;
+            statusBannerEl.classList.add(statusClass);
+            statusSummaryEl.textContent = `Based on reports from ${totalSectionsWithVotes} section(s) in the last 6 hours.`;
+        }
+        
+        function displaySectionalStatus(sectionalResults) {
+            sectionalStatusContainer.innerHTML = '';
+            sections.forEach(sectionName => {
+                const sectionData = sectionalResults[sectionName];
+                if (sectionData.total === 0) return;
+
+                let statusClass = 'status-tag-unknown';
+                if(sectionData.status === 'FLOODED') statusClass = 'status-tag-flooded';
+                if(sectionData.status === 'CLEAR') statusClass = 'status-tag-clear';
+                
+                const sectionCard = document.createElement('div');
+                sectionCard.className = 'card !p-4 flex justify-between items-center';
+                sectionCard.innerHTML = `
+                    <p class="font-bold text-gray-200">${sectionName}</p>
+                    <span class="status-tag ${statusClass}">${sectionData.status}</span>
+                `;
+                sectionalStatusContainer.appendChild(sectionCard);
+            });
+        }
+
+        function displayReports(reports) {
+            reportsListEl.innerHTML = ''; 
+            if (reports.length === 0) {
+                reportsListEl.innerHTML = '<p class="text-gray-500 text-center py-4">No recent reports found.</p>';
+                return;
+            }
+
+            reports.forEach(report => {
+                const reportEl = document.createElement('div');
+                reportEl.className = 'card !p-4';
+                const statusClass = report.isFlooded ? 'text-red-400' : 'text-green-400';
+                const statusText = report.isFlooded ? 'Flooded' : 'Clear';
+                const time = report.timestamp ? report.timestamp.toDate().toLocaleString() : 'Just now';
+                const locationText = Array.isArray(report.location) ? report.location.join(', ') : report.location;
+                reportEl.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-lg text-gray-100">${locationText}</p>
+                            <p class="text-sm text-gray-400 font-mono">Reported at ${time}</p>
+                        </div>
+                        <span class="font-bold text-lg ${statusClass}">${statusText}</span>
+                    </div>`;
+                reportsListEl.appendChild(reportEl);
+});
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            if (!userId) {
+                showModal("You must be signed in to submit a report.");
+                return;
+            }
+            const isFloodedRadio = document.querySelector('input[name="isFlooded"]:checked');
+            if (!isFloodedRadio) {
+                showModal("Please select a path status (Flooded or Clear).");
+                return;
+            }
+            const isFlooded = isFloodedRadio.value === 'true';
+            const checkedBoxes = document.querySelectorAll('input[name="location"]:checked');
+            if (checkedBoxes.length === 0) {
+                showModal("Please select at least one location.");
+                return;
+            }
+            let finalLocations = [];
+            checkedBoxes.forEach(box => finalLocations.push(box.value));
+            
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/reports`), {
+                    location: finalLocations,
+                    isFlooded: isFlooded,
+                    timestamp: serverTimestamp(),
+                    userId: userId
+                });
+                showModal("Report submitted successfully!");
+                reportForm.reset();
+                locationWrapper.classList.add('hidden');
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                showModal("Failed to submit report. Please try again.");
+            }
+        }
+        
+        function showModal(message) {
+            modalMessage.textContent = message;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function handleRadioChange() {
+            const isFloodedSelected = document.querySelector('input[name="isFlooded"]:checked').value === 'true';
+            locationWrapper.classList.remove('hidden');
+            locationLabel.textContent = isFloodedSelected ? 'Flooded Location(s)' : 'Cleared Location(s)';
+        }
+
+        reportForm.addEventListener('submit', handleFormSubmit);
+        radioButtons.forEach(radio => radio.addEventListener('change', handleRadioChange));
+        document.addEventListener('DOMContentLoaded', () => {
+            populateLocationCheckboxes();
+            initialize();
+        });
+    </script>
+</body>
+</html>
