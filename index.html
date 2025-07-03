@@ -176,32 +176,19 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Configuration and Initialization ---
-        
-        // =================================================================================
-        //  IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE
-        // =================================================================================
-        // You can get this from your Firebase project settings.
-        // 1. Go to the Firebase Console (https://console.firebase.google.com/)
-        // 2. Select your project.
-        // 3. Click the gear icon (Project settings) in the top-left.
-        // 4. In the "General" tab, scroll down to "Your apps".
-        // 5. Click on your web app's name.
-        // 6. Under "Firebase SDK snippet", select "Config".
-        // 7. Copy the entire 'firebaseConfig' object and paste it below, replacing the placeholder.
-        // =================================================================================
+        // --- Firebase Configuration ---
         const firebaseConfig = {
-       apiKey: "AIzaSyDRVoJ4J1n_QCi2VOpvlQpylL4qQ-xN39Y",
-  authDomain: "isthecapitalcitytrailflo-7a1f5.firebaseapp.com",
-  projectId: "isthecapitalcitytrailflo-7a1f5",
-  storageBucket: "isthecapitalcitytrailflo-7a1f5.firebasestorage.app",
-  messagingSenderId: "424532178719",
-  appId: "1:424532178719:web:ebba0f8fb7b9fdb468a22a",
-  measurementId: "G-EPMCCQ941S"
+          apiKey: "AIzaSyDRVoJ4J1n_QCi2VOpvlQpylL4qQ-xN39Y",
+          authDomain: "isthecapitalcitytrailflo-7a1f5.firebaseapp.com",
+          projectId: "isthecapitalcitytrailflo-7a1f5",
+          storageBucket: "isthecapitalcitytrailflo-7a1f5.appspot.com",
+          messagingSenderId: "424532178719",
+          appId: "1:424532178719:web:ebba0f8fb7b9fdb468a22a",
+          measurementId: "G-EPMCCQ941S"
         };
-        // --- END OF FIREBASE CONFIGURATION ---
+        // --- End of Firebase Configuration ---
 
-        const appId = 'capital-city-trail-flood-reporter'; // This is a unique name for your app's data in Firestore
+        const appId = 'capital-city-trail-flood-reporter'; // A unique name for your app's data collection
 
         let app, db, auth, userId;
 
@@ -225,18 +212,6 @@
         ];
 
         async function initialize() {
-            // Check if the placeholder config is still being used
-            if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
-                console.error("Firebase config is missing or is still a placeholder.");
-                mainStatusEl.textContent = "Configuration Error";
-                statusSummaryEl.innerHTML = `
-                    <p class="text-red-400 font-bold text-lg">ACTION REQUIRED</p>
-                    <p class="text-sm mt-2">The Firebase configuration is missing. You need to paste your project's credentials into the HTML file to connect to the database. Please follow the instructions in the code comments.</p>
-                `;
-                // Hide the reporting form if there's a config error
-                document.querySelector('.card.mb-8').style.display = 'none';
-                return;
-            }
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
@@ -244,15 +219,42 @@
                 onAuthStateChanged(auth, user => {
                     if (user) {
                         userId = user.uid;
-                        userIdDisplay.textContent = `User ID: ${userId}`;
+                        userIdDisplay.textContent = `User ID: ${userId.substring(0, 8)}...`; // Show partial ID for privacy
                         setupRealtimeListener();
                     } else {
-                        signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
+                        signInAnonymously(auth).catch(error => {
+                            console.error("Anonymous sign-in failed.", error);
+                            mainStatusEl.textContent = "Authentication Error";
+                            // Provide specific error messages based on the error code.
+                            if (error.code === 'auth/admin-restricted-operation') {
+                                statusSummaryEl.innerHTML = `
+                                    <div class="text-left">
+                                        <p class="text-red-400 font-bold text-lg text-center">ACTION REQUIRED</p>
+                                        <p class="text-sm mt-2 text-center">Anonymous sign-in is disabled.</p>
+                                        <p class="text-sm mt-4 font-bold">To fix this:</p>
+                                        <ol class="text-sm list-decimal list-inside mt-1 space-y-1">
+                                            <li>Go to the <a href="https://console.cloud.google.com/apis/library/identitytoolkit.googleapis.com" target="_blank" class="underline">Google Cloud Console Identity Platform page</a>.</li>
+                                            <li>Ensure your project <strong>isthecapitalcitytrailflo-7a1f5</strong> is selected.</li>
+                                            <li>Click the <strong>Enable</strong> button. This may take a moment.</li>
+                                            <li>Then, go to the <a href="https://console.firebase.google.com/" target="_blank" class="underline">Firebase Console</a>, select your project, go to Authentication -> Sign-in method, and enable the <strong>Anonymous</strong> provider.</li>
+                                        </ol>
+                                    </div>
+                                `;
+                            } else if (error.code === 'auth/configuration-not-found') {
+                                statusSummaryEl.innerHTML = `
+                                    <p class="text-red-400 font-bold text-lg">ACTION REQUIRED</p>
+                                    <p class="text-sm mt-2">Anonymous sign-in is not enabled for this project. Please go to your Firebase Console -> Authentication -> Sign-in method -> and enable the 'Anonymous' provider.</p>
+                                `;
+                            } else {
+                                statusSummaryEl.textContent = "Could not sign in. This might be due to the domain not being authorized in your Firebase Authentication settings.";
+                            }
+                        });
                     }
                 });
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
-                mainStatusEl.textContent = "Init Failed";
+                mainStatusEl.textContent = "Initialization Failed";
+                statusSummaryEl.textContent = "Could not connect to the database service.";
             }
         }
         
@@ -295,7 +297,7 @@
             }, (error) => {
                 console.error("Error fetching real-time reports: ", error);
                 mainStatusEl.textContent = "Data Error";
-                statusSummaryEl.textContent = "Could not fetch data.";
+                statusSummaryEl.textContent = "Could not fetch data from the database.";
             });
         }
 
