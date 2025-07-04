@@ -6,7 +6,6 @@
     <title>Is the Capital City Trail Flooded?</title>
     <meta name="description" content="Real-time flood status for Melbourne's Capital City Trail. Check if the beloved trail is all clear or a swimming pool today.">
     
-    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8CCB3SMB8B"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -76,6 +75,11 @@
         .primary-button:hover {
             background-color: #2563EB; /* Blue-600 */
         }
+        .primary-button:disabled {
+            background-color: #374151;
+            color: #9CA3AF;
+            cursor: not-allowed;
+        }
 
         .form-radio, .form-checkbox {
             accent-color: #3B82F6;
@@ -94,6 +98,15 @@
         .status-tag-clear { background-color: rgba(16, 185, 129, 0.2); color: #34D399; }
         .status-tag-flooded { background-color: rgba(239, 68, 68, 0.2); color: #F87171; }
         .status-tag-unknown { background-color: rgba(245, 158, 11, 0.2); color: #FBBF24; }
+        
+        .error-code {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #111827;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
 
     </style>
 </head>
@@ -106,19 +119,15 @@
         </header>
 
         <main>
-            <!-- Main Status Display -->
             <div id="status-banner" class="status-banner p-8 md:p-12 mb-8">
                 <p class="text-xl md:text-2xl font-medium mb-2 text-gray-300">Current Status</p>
                 <h2 id="main-status" class="text-3xl md:text-4xl font-bold tracking-wide leading-tight">LOADING...</h2>
                 <p id="status-summary" class="mt-4 text-base text-gray-400"></p>
             </div>
             
-            <!-- Sectional Status Display -->
             <div id="sectional-status-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                <!-- Sectional statuses will be dynamically inserted here -->
-            </div>
+                </div>
 
-            <!-- Reporting Form -->
             <div class="card mb-8">
                 <h3 class="text-2xl font-bold mb-4 text-white">Log a New Report</h3>
                 <form id="report-form">
@@ -138,15 +147,13 @@
                     <div id="location-wrapper" class="mb-4 hidden">
                         <label id="location-label" class="block font-medium mb-2 text-gray-300">Affected Location(s)</label>
                         <div id="location-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                            <!-- Checkboxes will be dynamically inserted here -->
-                        </div>
+                            </div>
                     </div>
-                    <button type="submit" class="primary-button text-lg mt-2">Submit Report</button>
+                    <button type="submit" id="submit-button" class="primary-button text-lg mt-2" disabled>Connecting...</button>
                 </form>
                  <div id="user-id-display" class="mt-4 text-xs text-gray-500 font-mono"></div>
             </div>
 
-            <!-- Recent Reports -->
             <div>
                 <h3 class="text-2xl font-bold mb-4 text-white">Recent Reports (Last 6 Hours)</h3>
                 <div id="reports-list" class="space-y-4">
@@ -155,7 +162,6 @@
             </div>
         </main>
         
-        <!-- Modal for messages -->
         <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-10">
             <div class="card text-center w-11/12 md:w-1/2">
                 <p id="modal-message-text" class="text-xl text-white"></p>
@@ -205,6 +211,7 @@
         const locationLabel = document.getElementById('location-label');
         const radioButtons = document.querySelectorAll('input[name="isFlooded"]');
         const locationCheckboxesContainer = document.getElementById('location-checkboxes');
+        const submitButton = document.getElementById('submit-button');
 
         const sections = [
             'Moonee Ponds Creek Trail', 'Docklands', 'South Wharf', 'Southbank',
@@ -219,13 +226,15 @@
                 onAuthStateChanged(auth, user => {
                     if (user) {
                         userId = user.uid;
-                        userIdDisplay.textContent = `User ID: ${userId.substring(0, 8)}...`; // Show partial ID for privacy
+                        userIdDisplay.textContent = `User ID: ${userId.substring(0, 8)}...`;
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Submit Report';
                         setupRealtimeListener();
                     } else {
                         signInAnonymously(auth).catch(error => {
                             console.error("Anonymous sign-in failed.", error);
                             mainStatusEl.textContent = "Authentication Error";
-                            // Provide specific error messages based on the error code.
+                            submitButton.textContent = 'Auth Failed';
                             if (error.code === 'auth/admin-restricted-operation') {
                                 statusSummaryEl.innerHTML = `
                                     <div class="text-left">
@@ -239,11 +248,6 @@
                                             <li>Then, go to the <a href="https://console.firebase.google.com/" target="_blank" class="underline">Firebase Console</a>, select your project, go to Authentication -> Sign-in method, and enable the <strong>Anonymous</strong> provider.</li>
                                         </ol>
                                     </div>
-                                `;
-                            } else if (error.code === 'auth/configuration-not-found') {
-                                statusSummaryEl.innerHTML = `
-                                    <p class="text-red-400 font-bold text-lg">ACTION REQUIRED</p>
-                                    <p class="text-sm mt-2">Anonymous sign-in is not enabled for this project. Please go to your Firebase Console -> Authentication -> Sign-in method -> and enable the 'Anonymous' provider.</p>
                                 `;
                             } else {
                                 statusSummaryEl.textContent = "Could not sign in. This might be due to the domain not being authorized in your Firebase Authentication settings.";
@@ -297,7 +301,34 @@
             }, (error) => {
                 console.error("Error fetching real-time reports: ", error);
                 mainStatusEl.textContent = "Data Error";
-                statusSummaryEl.textContent = "Could not fetch data from the database.";
+                if (error.code === 'permission-denied') {
+                     statusSummaryEl.innerHTML = `
+                        <div class="text-left">
+                            <p class="text-red-400 font-bold text-lg text-center">ACTION REQUIRED: Database Locked</p>
+                            <p class="text-sm mt-2 text-center">Your Firestore security rules are blocking the app from reading data.</p>
+                            <p class="text-sm mt-4 font-bold">To fix this, please follow these steps:</p>
+                             <ol class="text-sm list-decimal list-inside mt-1 space-y-1 bg-gray-900 p-2 rounded">
+                                <li>Go to the <a href="https://console.firebase.google.com/" target="_blank" class="underline">Firebase Console</a> and select your project.</li>
+                                <li>In the left menu, click <strong>Firestore Database</strong>.</li>
+                                <li>Click the <strong>Rules</strong> tab at the top.</li>
+                                <li>Delete all existing text and replace it with the code below.</li>
+                            </ol>
+                            <pre class="text-xs error-code mt-2"><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /artifacts/{appId}/public/data/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</code></pre>
+                            <ol class="text-sm list-decimal list-inside mt-2 space-y-1" start="5">
+                                <li>Click the <strong>Publish</strong> button and refresh this page.</li>
+                            </ol>
+                        </div>
+                    `;
+                } else {
+                    statusSummaryEl.textContent = "Could not fetch data from the database.";
+                }
             });
         }
 
@@ -338,7 +369,7 @@
             const sectionsWithVotes = Object.values(sectionalResults).filter(s => s.total > 0);
             const totalSectionsWithVotes = sectionsWithVotes.length;
             
-            if (totalSectionsWithVotes === 0) {
+            if (totalSectionsWithVotes === 0 && userId) { // Check if user is signed in before showing no reports
                 mainStatusEl.textContent = "UNKNOWN";
                 statusSummaryEl.textContent = "No reports in the last 6 hours.";
                 statusBannerEl.classList.add('status-unknown');
@@ -438,19 +469,38 @@
             let finalLocations = [];
             checkedBoxes.forEach(box => finalLocations.push(box.value));
             
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+
+            const submissionPromise = addDoc(collection(db, `artifacts/${appId}/public/data/reports`), {
+                location: finalLocations,
+                isFlooded: isFlooded,
+                timestamp: serverTimestamp(),
+                userId: userId
+            });
+
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Submission timed out.')), 10000) // 10 second timeout
+            );
+
             try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/reports`), {
-                    location: finalLocations,
-                    isFlooded: isFlooded,
-                    timestamp: serverTimestamp(),
-                    userId: userId
-                });
+                await Promise.race([submissionPromise, timeoutPromise]);
+                
                 showModal("Report submitted successfully!");
                 reportForm.reset();
                 locationWrapper.classList.add('hidden');
             } catch (error) {
-                console.error("Error adding document: ", error);
-                showModal("Failed to submit report. Please try again.");
+                console.error("Error adding document or timed out: ", error);
+                if (error.message.includes('timed out')) {
+                    showModal("Submission timed out. Please check your connection and try again.");
+                } else if (error.code === 'permission-denied') {
+                    showModal("Submission failed. Your security rules are blocking the app. Please check the main status banner for instructions.");
+                } else {
+                    showModal("Failed to submit report. Please try again.");
+                }
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Report';
             }
         }
         
